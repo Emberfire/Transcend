@@ -1,0 +1,26 @@
+:root {
+    --midnight-primary: #876796;
+    --midnight-secondary: #E2D5CC;
+}
+
+.test-primary {
+    width: 100px;
+    height: 500px;
+    display: inline-block;
+    background-color: var(--midnight-primary);
+    transition: filter 500ms ease-in-out;
+}
+
+.test-secondary {
+    width: 100px;
+    height: 500px;
+    display: inline-block;
+    background-color: var(--midnight-secondary);
+}
+
+.test-primary:hover {
+    filter: brightness(70%) blur(2px);
+}
+
+.test-secondary:hover {
+}
