@@ -3,14 +3,18 @@
     --midnight-secondary: #E2D5CC;
 }
 
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 .context-menu {
   position: absolute;
-  transition: height .268s cubic-bezier(0.4,0.0,0.2,1),
-              opacity .15s cubic-bezier(0.4,0.0,0.2,1),
-              transform .2s cubic-bezier(0.4,0.0,0.2,1);
+
   overflow: hidden;
-  width: 200px;
-  margin-top: 10px;
+  width: 250px;
   opacity: 0;
   box-shadow: 0 8px 10px 1px rgba(0,0,0,0.14),
               0 3px 14px 2px rgba(0,0,0,0.12),
@@ -18,6 +22,16 @@
   border-radius: 5px;
   user-select: none;
   height: 0px;
+  padding: 5px;
+
+  will-change: overflow-y, opacity, transform, height, top, left;
+  transition: height .268s cubic-bezier(0.4,0.0,0.2,1),
+              opacity .15s cubic-bezier(0.4,0.0,0.2,1),
+              transform .268s cubic-bezier(0.4,0.0,0.2,1);
+}
+
+.context-menu * {
+  overflow-wrap: break-word;
 }
 
 .context-menu-expanded {
