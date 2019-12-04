@@ -1,55 +1,78 @@
-class Dropdown {
+class ContextMenu {
+  #contextMenu;
+  #expanded;
+  #expandedHeight;
+  #expandedWidth;
+
   constructor() {
-    this.dropdownButton = document.querySelector(".dropdown-button");
-    this.dropdownElement = document.querySelector(".dropdown");
-    this.dropdownContents = document.querySelector(".dropdown .dropdown-content");
-    this.expanded = false;
+    this.#contextMenu = document.querySelector(".context-menu");
+    this.#expanded = false;
 
     this.calculateScales();
-
     this.setEventListeners();
   }
 
   calculateScales() {
-    this.dropdownContents.style.height = "auto";
-    console.log(this.dropdownContents.offsetHeight);
+    let temp = this.#contextMenu.style.height;
+    this.#contextMenu.style.height = "auto";
 
-    this.expandedHeight = this.dropdownContents.offsetHeight;
-    this.dropdownContents.style.height = "0px";
-    this.collapsedHeight = 0;
+    let dimensions = this.#contextMenu.getBoundingClientRect()
+    this.#expandedHeight = dimensions.height;
+    this.#expandedWidth = dimensions.width;
+
+    this.#contextMenu.style.height = temp;
+  }
+
+  calculatePosition(event) {
+    let x;
+    let y;
+    if (event.pageY >= (window.innerHeight / 2)) {
+      y = `${event.pageY - this.#expandedHeight - 17}px`;
+    } else {
+      y = `${event.pageY - 17}px`;
+    }
+
+    if (event.pageX + this.#expandedWidth + 10 >= window.innerWidth) {
+      x = `${event.pageX - ((event.pageX + this.#expandedWidth) - window.innerWidth) - 10}px`
+    } else {
+      x = `${event.pageX}px`;
+    }
+
+    return { x, y };
   }
 
   expand (event) {
-    this.dropdownContents.classList.remove("dropdown-expanded");
+    this.#contextMenu.classList.remove("context-menu-expanded");
+    let { x, y } = this.calculatePosition(event);
+    this.#contextMenu.style.left = x;
+    this.#contextMenu.style.top = y;
 
-    this.dropdownContents.style.left = `${event.pageX}px`;
-    this.dropdownContents.style.top = `${event.pageY}px`;
+    this.#contextMenu.style.height = `${this.#expandedHeight}px`;
+    this.#contextMenu.classList.add("context-menu-expanded");
 
-    this.dropdownContents.style.height = `${this.expandedHeight}px`;
-    this.dropdownContents.classList.add("dropdown-expanded");
-
-    this.expanded = true;
+    this.#expanded = true;
   }
 
   collapse () {
-    this.dropdownContents.classList.remove("dropdown-expanded");
+    this.#contextMenu.style.height = "0px";
+    this.#contextMenu.classList.remove("context-menu-expanded");
 
-    this.dropdownContents.style.height = this.collapsedHeight;
+    this.#expanded = false;
   }
 
   setEventListeners() {
     let self = this;
     window.addEventListener("contextmenu", function (event) {
       event.preventDefault();
-      self.collapse();
-      self.expand(event);
-
+        self.expand(event);
     });
 
     window.addEventListener("click", function (event) {
-      self.collapse();
+      if (self.#expanded) {
+        self.collapse();
+      }
     });
   }
 }
 
-new Dropdown();
+let a = new ContextMenu();
