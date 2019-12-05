@@ -119,6 +119,10 @@ class ContextMenu {
       self.collapse();
       self.expand(event);
     });
+      
+    this.contextMenu.addEventListener("contextmenu", function (event) {
+       event.preventDefault(); 
+    });
 
     window.addEventListener("click", function (event) {
       if (self.expanded) {
@@ -129,6 +133,10 @@ class ContextMenu {
     // Don't close the context menu if clicked inside it
     this.contextMenu.addEventListener("click", function (event) {
       event.stopPropagation();
+    });
+      
+    window.addEventListener("scroll", function () {
+        self.collapse();
     });
   }
 }
