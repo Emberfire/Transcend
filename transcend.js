@@ -50,16 +50,16 @@ class ContextMenu {
     if (event.pageY >= (window.innerHeight / 2)) {
       let overShootUp = Math.min(0, event.pageY - this.expandedHeight)
 
-      y = `${event.pageY - overShootUp - this.expandedHeight - 15}px`;
+      y = `${event.pageY - overShootUp - this.expandedHeight}px`;
     } else {
       // If the dropdown would overshoot the viewport and remain partially hidden, offset it up
       let overShootDown = Math.max(0, (event.pageY + this.expandedHeight) - window.innerHeight);
 
-      y = `${event.pageY - overShootDown - 15}px`;
+      y = `${event.pageY - overShootDown - 20}px`;
     }
 
-    if (event.pageX + this.expandedWidth + 10 >= window.innerWidth) {
-      x = `${event.pageX - ((event.pageX + this.expandedWidth) - window.innerWidth) - 10}px`
+    if (event.pageX + this.expandedWidth + 20 >= window.innerWidth) {
+      x = `${event.pageX - ((event.pageX + this.expandedWidth) - window.innerWidth) - 20}px`
     } else {
       x = `${event.pageX + 3}px`;
     }
@@ -119,9 +119,9 @@ class ContextMenu {
       self.collapse();
       self.expand(event);
     });
-      
+
     this.contextMenu.addEventListener("contextmenu", function (event) {
-       event.preventDefault(); 
+       event.preventDefault();
     });
 
     window.addEventListener("click", function (event) {
@@ -134,10 +134,14 @@ class ContextMenu {
     this.contextMenu.addEventListener("click", function (event) {
       event.stopPropagation();
     });
-      
-    window.addEventListener("scroll", function () {
+
+    window.addEventListener("scroll", function (event) {
+      if (self.expanded && event.target !== self.contextMenu) {
+        console.log("scroll");
         self.collapse();
-    });
+      }
+    },
+    { capture: true, passive: true });
   }
 }
 
