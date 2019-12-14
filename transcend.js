@@ -5,7 +5,6 @@ class Transcend {
 }
 
 class ContextMenu {
-
   constructor (parentElement) {
     if (parentElement && typeof parentElement === "object") {
       this.parentElement = parentElement;
@@ -25,54 +24,58 @@ class ContextMenu {
     let temp = this.contextMenu.style.height;
     this.contextMenu.style.height = "auto";
 
-    let dimensions = this.contextMenu.getBoundingClientRect();
-    if (window.innerHeight - 10 < dimensions.height) {
-      dimensions.height = window.innerHeight - 15;
+    let height = this.contextMenu.offsetHeight;
+    let width = this.contextMenu.offsetWidth;
+    if (window.innerHeight < height) {
+      height = document.documentElement.clientHeight - 25;
       this.contextMenu.style.overflowY = "scroll";
       this.scrollable = true;
     }
 
-    this.expandedHeight = dimensions.height;
-    this.expandedWidth = dimensions.width;
+    this.expandedHeight = height;
+    this.expandedWidth = width;
 
     if (temp) {
-      this.contextMenu.style.height = temp;
+      this.contextMenu.style.height = `${height}px`;
     } else {
       this.contextMenu.style.removeProperty("height");
     }
   }
 
-  calculatePosition (event) {
-    let x;
-    let y;
+  calculatePosition (x, y) {
+    let normalizedX;
+    let normalizedY;
 
     // Open menu upwards if pointer is below half of the screen
-    if (event.pageY >= (window.innerHeight / 2)) {
-      let overShootUp = Math.min(0, event.pageY - this.expandedHeight)
+    if (y > (document.documentElement.clientHeight / 2)) {
+      let overShootUp = Math.min(15, y - this.expandedHeight);
 
-      y = `${event.pageY - overShootUp - this.expandedHeight}px`;
+      normalizedY = `${Math.max(0, y - this.expandedHeight - overShootUp)}px`;
     } else {
       // If the dropdown would overshoot the viewport and remain partially hidden, offset it up
-      let overShootDown = Math.max(0, (event.pageY + this.expandedHeight) - window.innerHeight);
+      let overShootDown = Math.max(-4, (y + this.expandedHeight + 15) - document.documentElement.clientHeight);
 
-      y = `${event.pageY - overShootDown - 20}px`;
+      normalizedY = `${Math.max(0, y - 10 - overShootDown)}px`;
     }
 
-    if (event.pageX + this.expandedWidth + 20 >= window.innerWidth) {
-      x = `${event.pageX - ((event.pageX + this.expandedWidth) - window.innerWidth) - 20}px`
+    if (x + this.expandedWidth > document.documentElement.clientWidth) {
+      let overshootRight = Math.max(0, x + this.expandedWidth - document.documentElement.clientWidth);
+
+      normalizedX = `${x - 5 - overshootRight}px`
     } else {
-      x = `${event.pageX + 3}px`;
+      normalizedX = `${x + 1}px`;
     }
 
-    return { x, y };
+    return { normalizedX, normalizedY };
   }
 
-  expand (event) {
-    this.contextMenu.classList.remove("context-menu-expanded");
+  expand (x = 0, y = 0) {
+    this.collapse();
+    this.calculateScales();
+    let { normalizedX, normalizedY } = this.calculatePosition(x, y);
 
-    let { x, y } = this.calculatePosition(event);
-    this.contextMenu.style.left = x;
-    this.contextMenu.style.top = y;
+    this.contextMenu.style.left = normalizedX;
+    this.contextMenu.style.top = normalizedY;
 
     if (this.scrollable) {
       this.contextMenu.scrollTo(0, 0);
@@ -81,11 +84,17 @@ class ContextMenu {
     this.contextMenu.style.height = `${this.expandedHeight}px`;
     this.contextMenu.classList.add("context-menu-expanded");
 
+    let self = this;
+    window.addEventListener("scroll", function (event) {
+      if (event.target !== self.contextMenu && self.expanded) {
+        self.collapse();
+      }
+    }, { once: true, passive: true });
+
     this.expanded = true;
   }
 
   collapse () {
-    //this.contextMenu.style.height = "0px";
     this.contextMenu.style.removeProperty("height");
     this.contextMenu.classList.remove("context-menu-expanded");
 
@@ -100,10 +109,6 @@ class ContextMenu {
       this.contextMenu.innerHTML += element;
       this.calculateScales();
     }
-
-    if (this.expanded) {
-      this.contextMenu.style.height = `${this.expandedHeight}px`;
-    }
   }
 
   remove (element) {
@@ -117,7 +122,7 @@ class ContextMenu {
       event.preventDefault();
 
       self.collapse();
-      self.expand(event);
+      self.expand(event.clientX, event.clientY);
     });
 
     this.contextMenu.addEventListener("contextmenu", function (event) {
@@ -125,23 +130,15 @@ class ContextMenu {
     });
 
     window.addEventListener("click", function (event) {
-      if (self.expanded) {
+      if (event.target !== self.contextMenu && self.expanded) {
         self.collapse();
       }
     });
 
     // Don't close the context menu if clicked inside it
-    this.contextMenu.addEventListener("click", function (event) {
-      event.stopPropagation();
-    });
-
-    window.addEventListener("scroll", function (event) {
-      if (self.expanded && event.target !== self.contextMenu) {
-        console.log("scroll");
-        self.collapse();
-      }
-    },
-    { capture: true, passive: true });
+    // this.contextMenu.addEventListener("click", function (event) {
+    //   event.stopPropagation();
+    // });
   }
 }
 

@@ -5,14 +5,15 @@
 
 html, body {
   height: 200%;
-  width: 100%;
+  width: 200%;
   margin: 0;
   padding: 0;
 }
 
 .context-menu {
-  position: absolute;
+  position: fixed;
 
+  /* border: 3px solid black; */
   overflow: hidden;
   width: 250px;
   opacity: 0;
@@ -23,6 +24,7 @@ html, body {
   user-select: none;
   height: 0px;
   padding: 5px;
+  overflow-wrap: break-word;
 
   will-change: overflow-y, opacity, transform, height, top, left;
   transition: height .268s cubic-bezier(0.4,0.0,0.2,1),
@@ -30,11 +32,7 @@ html, body {
               transform .268s cubic-bezier(0.4,0.0,0.2,1);
 }
 
-.context-menu * {
-  overflow-wrap: break-word;
-}
-
 .context-menu-expanded {
   opacity: 1;
-  transform: translate(0px, 5px);
+  transform: translateY(5px);
 }
