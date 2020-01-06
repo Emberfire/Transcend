@@ -13,7 +13,6 @@ html, body {
 .context-menu {
   position: fixed;
 
-border: 1px solid black;
   height: 0px;
   width: 250px;
   padding: 5px;

@@ -5,39 +5,52 @@ class Transcend {
     this.contextMenus = [];
   }
 
-  ContextMenu(options) {
-    this.contextMenus.push(new ContextMenu(options));
+  static ContextMenu(element, options) {
+    ts.contextMenus.push(new ContextMenu(element, options));
   }
 }
 
+let ts = new Transcend();
+
 class ContextMenu {
-  parentElement;                    // HTMLElement: The element for the context menu to be opened when right clicked.
   contextMenuElement;               // HTMLElement: The context menu element that is to be shown.
-  expanded;                         // Bool: The state of the context menu.
-  scrollable;                       // Bool: If the context menu is too large to be displayed.
+  expanded = false;                 // Bool: The state of the context menu.
+  scrollable = false;               // Bool: If the context menu is too large to be displayed.
   expandedHeight;                   // Int: The height of the context menu when it is expanded.
   expandedWidth;                    // Int: The width of the context menu when it is expanded.
 
-  settings = {                      // Object: The settings for the context menu. See the Default Settings section for more information.
-    /* Default Settings */
-    parentElement: window,
-    preventInnerContext: true
+  settings = {                      // Object: The default settings for the context menu.
+    parentElement: window,          // HTMLElement: The element for the context menu to be opened when right clicked.
+    innerContext: false,            // Bool: Whether right-clicking on the context menu should open the default context menu.
+    scrollFit: true,                // Bool: Whether the context menu should shrink to fit the viewport and add a scrollbar to access all the options in it.
+    closeOnScroll: true             // Bool: Whether the context menu should close if the user scrolls the page. Scrolling on the element does not close it.
   };
 
-  constructor (inputSettings) {
+  constructor (element, inputSettings) {
+    if (element && element instanceof HTMLElement) {
+      this.contextMenuElement = element;
+    } else {
+      throw "Error: Context menu element is not defined!"
+    }
+
     if (inputSettings) {
-      if (inputSettings.parentElement) {
-        this.parentElement = document.querySelector(inputSettings.parentElement);
-      } else {
-        this.parentElement = window;
+      if (inputSettings.parentElement && inputSettings.parentElement instanceof HTMLElement) {
+        this.settings.parentElement = inputSettings.parentElement;
       }
 
-      if (inputSettings.preventInnerContext !== undefined && inputSettings.preventInnerContext !== null) {
-        this.settings.preventInnerContext = inputSettings.preventInnerContext;
+      if (inputSettings.innerContext != undefined && typeof inputSettings.innerContext === "boolean") {
+        this.settings.innerContext = inputSettings.innerContext;
+      }
+
+      if (inputSettings.scrollFit != undefined && typeof inputSettings.scrollFit === "boolean") {
+        this.settings.scrollFit = inputSettings.scrollFit;
+      }
+
+      if (inputSettings.closeOnScroll != undefined && typeof inputSettings.closeOnScroll === "boolean") {
+        this.settings.closeOnScroll = inputSettings.closeOnScroll;
       }
     }
 
-    this.contextMenuElement = document.querySelector(".context-menu");
     this.expanded = false;
     this.scrollable = false;
 
@@ -48,7 +61,7 @@ class ContextMenu {
   expand (x = 0, y = 0) {
     this.collapse();
 
-    // Handle changes to the context menu contents.
+    // Handle changes to the context menu content.
     this.calculateScales();
 
     // Calculate context menu position relative to the viewport, so that it always is in view.
@@ -66,15 +79,16 @@ class ContextMenu {
 
     let self = this;
 
-    // Don't close the context menu if clicked inside it.
-    window.addEventListener("scroll", function (event) {
-      if (event.target !== self.contextMenu && self.expanded) {
-        self.collapse();
-      }
+    if (this.settings.closeOnScroll) {
+      // Don't close the context menu if clicked inside it.
+      window.addEventListener("scroll", function (event) {
+        if (event.target !== self.contextMenu && self.expanded) {
+          self.collapse();
+        }
 
-      // Event listener is removed when it's fired once to prevent firing on every scroll. Passive is because
-      // it won't prevent default actions.
-    }, { once: true, passive: true });
+        // Event listener is removed when it's fired once to prevent firing on every scroll. Passive is because it won't prevent default actions.
+      }, { once: true, passive: true });
+    }
 
     this.expanded = true;
   }
@@ -87,28 +101,36 @@ class ContextMenu {
   }
 
   calculateScales () {
-    let temp = this.contextMenuElement.style.height;
-    this.contextMenuElement.style.height = "auto";
+    let t0 = window.performance.now();
 
-    let height = this.contextMenuElement.offsetHeight;
-    let width = this.contextMenuElement.offsetWidth;
+    if (this.expandedHeight !== this.contextMenuElement.offsetHeight) {
+      let temp = this.contextMenuElement.style.height;
+      this.contextMenuElement.style.height = "auto";
 
-    // If the element is too long to fit in the viewport.
-    if (document.documentElement.clientHeight < height) {
-      height = document.documentElement.clientHeight - 25;
-      this.contextMenuElement.style.overflowY = "scroll";
+      let height = this.contextMenuElement.offsetHeight;
 
-      this.scrollable = true;
+      // If the element is too long to fit in the viewport.
+      if (this.settings.scrollFit && document.documentElement.clientHeight < height) {
+        height = document.documentElement.clientHeight - 25;
+        this.contextMenuElement.style.overflowY = "scroll";
+
+        this.scrollable = true;
+      }
+
+      this.expandedHeight = height;
+
+      if (temp) {
+        this.contextMenuElement.style.height = `${height}px`;
+      } else {
+        this.contextMenuElement.style.removeProperty("height");
+      }
     }
 
-    this.expandedHeight = height;
-    this.expandedWidth = width;
+    this.expandedWidth = this.contextMenuElement.offsetWidth;
 
-    if (temp) {
-      this.contextMenuElement.style.height = `${height}px`;
-    } else {
-      this.contextMenuElement.style.removeProperty("height");
-    }
+    let t1 = window.performance.now();
+
+    console.log(`Call to calculateScales took ${t1 - t0} milliseconds.`);
   }
 
   calculatePosition (x, y) {
@@ -161,12 +183,12 @@ class ContextMenu {
     let self = this;
 
     window.addEventListener("contextmenu", function (event) {
-      if (self.expanded && event.target !== self.parentElement && event.target !== self.contextMenuElement) {
+      if (self.expanded && event.target !== self.settings.parentElement && event.target !== self.contextMenuElement) {
         self.collapse();
       }
     });
 
-    this.parentElement.addEventListener("contextmenu", function (event) {
+    this.settings.parentElement.addEventListener("contextmenu", function (event) {
       if (event.target !== self.contextMenuElement) {
         event.preventDefault();
 
@@ -175,7 +197,7 @@ class ContextMenu {
     });
 
     this.contextMenuElement.addEventListener("contextmenu", function (event) {
-      if (self.settings.preventInnerContext) {
+      if (!self.settings.innerContext) {
         event.preventDefault();
       }
     });
@@ -188,8 +210,9 @@ class ContextMenu {
   }
 }
 
-let ts = new Transcend();
-ts.ContextMenu({
-  preventInnerContext: true,
+Transcend.ContextMenu(document.querySelector(".context-menu"), {
+  innerContext: true,
+  closeOnScroll: true,
+  scrollFit: true
   //parentElement: ".test"
 });
