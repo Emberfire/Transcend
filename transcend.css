@@ -27,12 +27,13 @@ html, body {
   user-select: none;
 
   border-radius: 5px;
+  border-top-left-radius: 0;
 
   overflow-wrap: break-word;
 
   will-change: overflow-y, opacity, transform, height, top, left;
   transition: height .268s cubic-bezier(0.4,0.0,0.2,1),
-              opacity .15s cubic-bezier(0.4,0.0,0.2,1),
+              opacity .268s cubic-bezier(0.4,0.0,0.2,1),
               transform .268s cubic-bezier(0.4,0.0,0.2,1);
 }
 
