@@ -4,8 +4,8 @@
 }
 
 html, body {
-  height: 200%;
-  width: 200%;
+  height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
 }
@@ -13,7 +13,7 @@ html, body {
 .context-menu {
   position: fixed;
 
-  height: 0px;
+  /* height: 0px; */
   width: 250px;
   padding: 5px;
   box-shadow: 0 1px 1px rgba(0,0,0,0.12),
@@ -22,23 +22,32 @@ html, body {
               0 8px 8px rgba(0,0,0,0.12),
               0 16px 16px rgba(0,0,0,0.12);
   overflow: hidden;
-  opacity: 0;
   background-color: white;
   user-select: none;
+  opacity: 0;
 
   border-radius: 5px;
   border-top-left-radius: 0;
 
   overflow-wrap: break-word;
 
-  will-change: overflow-y, opacity, transform, height, top, left;
-  transition: height .268s cubic-bezier(0.4,0.0,0.2,1),
-              opacity .268s cubic-bezier(0.4,0.0,0.2,1),
-              transform .268s cubic-bezier(0.4,0.0,0.2,1);
+  will-change: overflow-y, opacity, top, left;
+  transition: opacity .268s cubic-bezier(0.4,0.0,0.2,1);
+}
+
+.context-menu-collapsing {
+  opacity: 0;
+}
+
+.context-menu-expanding {
+  opacity: 1;
+}
+
+.context-menu-collapsed {
+  opacity: 0;
+  display: none;
 }
 
 .context-menu-expanded {
   opacity: 1;
-
-  transform: translateY(5px);
 }

@@ -18,7 +18,6 @@ class ContextMenu {
   scrollable = false;               // Bool: If the context menu is too large to be displayed.
   expandedHeight;                   // Int: The height of the context menu when it is expanded.
   expandedWidth;                    // Int: The width of the context menu when it is expanded.
-  displayTemp = "block";            // String: The temporary container for the display property of the context menu (in case the user changed it to something else).
 
   settings = {                      // Object: The default settings for the context menu.
     triggerContainer: window,       // HTMLElement: The element for the context menu to be opened when right clicked.
@@ -71,24 +70,13 @@ class ContextMenu {
     this.expanded = false;
     this.scrollable = false;
 
-    this.calculateScales();
+    //this.collapse();
     this.setEventListeners();
     //console.timeEnd("constructor");
   }
 
   expand (x = 0, y = 0) {
     console.time("expand");
-    this.collapse();
-
-    // First remove the display property (inserting the context menu back into the DOM)
-    if (this.displayTemp !== "block") {
-      this.contextMenuElement.style.display = this.displayTemp;
-    } else {
-      this.contextMenuElement.style.removeProperty("display");
-    }
-
-    // Handle changes to the context menu content.
-    this.calculateScales();
 
     // Calculate context menu position relative to the viewport, so that it always is in view.
     let { normalizedX, normalizedY } = this.calculatePosition(x, y);
@@ -100,8 +88,9 @@ class ContextMenu {
       this.contextMenuElement.scrollTo(0, 0);
     }
 
-    this.contextMenuElement.style.height = `${this.expandedHeight}px`;
-    this.contextMenuElement.classList.add("context-menu-expanded");
+    this.contextMenuElement.classList.remove("context-menu-collapsed");
+    this.contextMenuElement.classList.add("context-menu-expanding");
+    this.expanded = true;
 
     let self = this;
 
@@ -116,46 +105,17 @@ class ContextMenu {
       }, { once: true, passive: true });
     }
 
-    this.expanded = true;
     console.timeEnd("expand");
   }
 
   collapse () {
     //console.time("setEventListeners");
-    this.contextMenuElement.style.removeProperty("height");
+
     this.contextMenuElement.classList.remove("context-menu-expanded");
-
+    this.contextMenuElement.classList.add("context-menu-collapsing");
     this.expanded = false;
+
     //console.timeEnd("setEventListeners");
-  }
-
-  calculateScales () {
-    //console.time("calculateScales");
-    if (this.expandedHeight !== this.contextMenuElement.offsetHeight) {
-      let temp = this.contextMenuElement.style.height;
-      this.contextMenuElement.style.height = "auto";
-
-      let height = this.contextMenuElement.offsetHeight;
-
-      // If the element is too long to fit in the viewport.
-      if (this.settings.scrollFit && document.documentElement.clientHeight < height) {
-        height = document.documentElement.clientHeight - 25;
-        this.contextMenuElement.style.overflowY = "scroll";
-
-        this.scrollable = true;
-      }
-
-      this.expandedHeight = height;
-
-      if (temp) {
-        this.contextMenuElement.style.height = `${height}px`;
-      } else {
-        this.contextMenuElement.style.removeProperty("height");
-      }
-    }
-
-    this.expandedWidth = this.contextMenuElement.offsetWidth;
-    //console.timeEnd("calculateScales");
   }
 
   calculatePosition (x, y) {
@@ -246,20 +206,16 @@ class ContextMenu {
       }
     });
 
-    // this.contextMenuElement.addEventListener('transitionstart', function (event) {
-    //   if (event.propertyName == "height") {
-    //
-    //   }
-    // });
-
-    // Remove the element from the DOM to prevent it messing up the flow and click events.
-    this.contextMenuElement.addEventListener('transitionend', function (event) {
-      if (event.propertyName == "height" && !self.expanded) {
-        self.displayTemp = self.contextMenuElement.style.display;
-        self.contextMenuElement.style.display = "none";
-      }
-    });
-    //console.timeEnd("setEventListeners");
+     this.contextMenuElement.addEventListener('transitionend', function (event) {
+       if (self.expanded) {
+         self.contextMenuElement.classList.remove("context-menu-expanding");
+         self.contextMenuElement.classList.add("context-menu-expanded");
+       } else {
+         self.contextMenuElement.classList.remove("context-menu-collapsing");
+         self.contextMenuElement.classList.add("context-menu-collapsed");
+       }
+     });
+    console.timeEnd("setEventListeners");
   }
 }
 
