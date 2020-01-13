@@ -24,7 +24,7 @@ html, body {
   overflow: hidden;
   background-color: white;
   user-select: none;
-  opacity: 0;
+  overscroll-behavior: contain;
 
   border-radius: 5px;
   border-top-left-radius: 0;
@@ -32,22 +32,52 @@ html, body {
   overflow-wrap: break-word;
 
   will-change: overflow-y, opacity, top, left;
-  transition: opacity .268s cubic-bezier(0.4,0.0,0.2,1);
 }
 
 .context-menu-collapsing {
-  opacity: 0;
+  animation-name: fadeOut;
+  animation-duration: .268s;
+  animation-timing-function: cubic-bezier(0.4,0.0,0.2,1);
 }
 
 .context-menu-expanding {
-  opacity: 1;
+  animation-name: fadeIn;
+  animation-duration: .268s;
+  animation-timing-function: cubic-bezier(0.4,0.0,0.2,1);
 }
 
 .context-menu-collapsed {
-  opacity: 0;
-  display: none;
+  animation-name: fadeOut;
+  animation-duration: .268s;
+  animation-timing-function: cubic-bezier(0.4,0.0,0.2,1);
 }
 
 .context-menu-expanded {
-  opacity: 1;
+  animation-name: fadeIn;
+  animation-duration: .268s;
+  animation-timing-function: cubic-bezier(0.4,0.0,0.2,1);
+}
+
+.removed {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
 }

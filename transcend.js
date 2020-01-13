@@ -24,15 +24,19 @@ class ContextMenu {
     innerContextMenu: false,        // Bool: Whether right-clicking on the context menu should open the default context menu.
     scrollFit: true,                // Bool: Whether the context menu should shrink to fit the viewport and add a scrollbar to access all the options in it.
     closeOnScroll: true,            // Bool: Whether the context menu should close if the user scrolls the page. Scrolling on the element does not close it.
-    persistent: false               // Bool: Whether the context menu should remain open if the user clicks on it.
+    persistent: false,              // Bool: Whether the context menu should remain open if the user clicks on it.
+    debug: false                    // Bool: Initializes in debug mode, printing every function time to the console.
   };
 
   constructor (element, inputSettings) {
-    //console.time("constructor");
+    if (this.settings.debug) {
+      console.time("init");
+    }
+
     if (element && element instanceof HTMLElement) {
       this.contextMenuElement = element;
     } else {
-      throw "Error: Context menu element is not defined!"
+      throw new TypeError("Context menu element is not defined!");
     }
 
     if (inputSettings) {
@@ -50,47 +54,71 @@ class ContextMenu {
         this.settings.triggerContainer = this.contextMenuElement.parentElement;
       }
 
-      if (inputSettings.innerContextMenu != undefined && typeof inputSettings.innerContextMenu === "boolean") {
+      if (inputSettings.innerContextMenu !== undefined && typeof inputSettings.innerContextMenu === "boolean") {
         this.settings.innerContextMenu = inputSettings.innerContextMenu;
       }
 
-      if (inputSettings.scrollFit != undefined && typeof inputSettings.scrollFit === "boolean") {
+      if (inputSettings.scrollFit !== undefined && typeof inputSettings.scrollFit === "boolean") {
         this.settings.scrollFit = inputSettings.scrollFit;
       }
 
-      if (inputSettings.closeOnScroll != undefined && typeof inputSettings.closeOnScroll === "boolean") {
+      if (inputSettings.closeOnScroll !== undefined && typeof inputSettings.closeOnScroll === "boolean") {
         this.settings.closeOnScroll = inputSettings.closeOnScroll;
       }
 
-      if (inputSettings.persistent != undefined && typeof inputSettings.persistent === "boolean") {
+      if (inputSettings.persistent !== undefined && typeof inputSettings.persistent === "boolean") {
         this.settings.persistent = inputSettings.persistent;
       }
     }
 
-    this.expanded = false;
-    this.scrollable = false;
-
-    //this.collapse();
+    this.expandedHeight = this.contextMenuElement.clientHeight;
+    this.expandedWidth = this.contextMenuElement.clientWidth;
+    this.contextMenuElement.classList.add("context-menu-collapsed", "removed");
     this.setEventListeners();
-    //console.timeEnd("constructor");
+
+    if (this.settings.debug) {
+      console.timeEnd("init");
+    }
   }
 
   expand (x = 0, y = 0) {
-    console.time("expand");
+    if (this.settings.debug) {
+      console.time("expand");
+    }
 
     // Calculate context menu position relative to the viewport, so that it always is in view.
-    let { normalizedX, normalizedY } = this.calculatePosition(x, y);
+    let { top, left, bottom, right } = this.calculatePosition(x, y);
 
-    this.contextMenuElement.style.left = normalizedX;
-    this.contextMenuElement.style.top = normalizedY;
+    if (top !== -1) {
+      this.contextMenuElement.style.removeProperty("bottom");
+      this.contextMenuElement.style.top = `${top}px`;
+    } else {
+      this.contextMenuElement.style.removeProperty("top");
+      this.contextMenuElement.style.bottom = `${bottom}px`;
+    }
+
+    if (left !== -1) {
+      this.contextMenuElement.style.removeProperty("right");
+      this.contextMenuElement.style.left = `${left}px`;
+    } else {
+      this.contextMenuElement.style.removeProperty("left");
+      this.contextMenuElement.style.right = `${right}px`;
+    }
+
+    if (this.expandedHeight >= document.documentElement.clientHeight - 10) {
+      this.expandedHeight = document.documentElement.clientHeight - 10;
+      this.contextMenuElement.style.height = `${document.documentElement.clientHeight - 20}px`;
+      this.contextMenuElement.style.overflowY = "scroll";
+      this.scrollable = true;
+    }
+
+    this.contextMenuElement.classList.remove("context-menu-collapsed", "removed");
+    this.contextMenuElement.classList.add("context-menu-expanded");
+    this.expanded = true;
 
     if (this.scrollable) {
       this.contextMenuElement.scrollTo(0, 0);
     }
-
-    this.contextMenuElement.classList.remove("context-menu-collapsed");
-    this.contextMenuElement.classList.add("context-menu-expanding");
-    this.expanded = true;
 
     let self = this;
 
@@ -105,50 +133,72 @@ class ContextMenu {
       }, { once: true, passive: true });
     }
 
-    console.timeEnd("expand");
+    if (this.settings.debug) {
+      console.timeEnd("expand");
+    }
   }
 
   collapse () {
-    //console.time("setEventListeners");
+    if (this.settings.debug) {
+      console.time("setEventListeners");
+    }
 
     this.contextMenuElement.classList.remove("context-menu-expanded");
-    this.contextMenuElement.classList.add("context-menu-collapsing");
+    this.contextMenuElement.classList.add("context-menu-collapsed");
     this.expanded = false;
 
-    //console.timeEnd("setEventListeners");
+    let self = this;
+    this.contextMenuElement.addEventListener('animationend', function (event) {
+      if (!self.expanded) {
+        self.contextMenuElement.classList.add("removed");
+      }
+    }, { once: true });
+
+    if (this.settings.debug) {
+      console.timeEnd("setEventListeners");
+    }
   }
 
   calculatePosition (x, y) {
-    //console.time("calculatePosition");
-    let normalizedX;
-    let normalizedY;
+    if (this.settings.debug) {
+      console.time("calculatePosition");
+    }
+
+    let coordinates = { top: -1, left: -1, bottom: -1, right: -1 };
 
     // Open menu upwards if pointer is below half of the screen
     if (y > (document.documentElement.clientHeight / 2)) {
-      let overShootUp = Math.min(15, y - this.expandedHeight);
-
-      normalizedY = `${Math.max(0, y - this.expandedHeight - overShootUp)}px`;
+      if (y - this.expandedHeight < 5) {
+        coordinates.top = 5;
+      } else {
+        coordinates.top = y - this.expandedHeight;
+      }
     } else {
       // If the dropdown would overshoot the viewport and remain partially hidden, offset it up
-      let overShootDown = Math.max(-5, (y + this.expandedHeight + 15) - document.documentElement.clientHeight);
-
-      normalizedY = `${Math.max(0, y - 10 - overShootDown) + 5}px`;
+      if (y + this.expandedHeight > document.documentElement.clientHeight - 5) {
+        coordinates.bottom = 5;
+      } else if (y < 5) {
+        coordinates.top = 5;
+      } else {
+        coordinates.top = y;
+      }
     }
 
     // If the element would overshoot on the right side of the viewport.
-    if (x + this.expandedWidth > document.documentElement.clientWidth) {
-      let overshootRight = Math.max(0, x + this.expandedWidth - document.documentElement.clientWidth);
-
-      normalizedX = `${x - 5 - overshootRight}px`
-    } else if (x < 6) {
+    if (x + this.expandedWidth > document.documentElement.clientWidth - 5) {
+      coordinates.right = 5;
+    } else if (x < 5) {
       // Add a little space between the left side of the viewport and the context menu.
-      normalizedX = `${x + 5}px`;
+      coordinates.left = 5;
     } else {
-      normalizedX = `${x + 2}px`;
+      coordinates.left = x;
     }
 
-    //console.timeEnd("calculatePosition");
-    return { normalizedX, normalizedY };
+    if (this.settings.debug) {
+      console.timeEnd("calculatePosition");
+    }
+
+    return coordinates;
   }
 
   /**
@@ -157,7 +207,10 @@ class ContextMenu {
    * @param  {HTMLElement, string} element Supports HTMLElement or html strings.
    */
   add (element) {
-    //console.time("add");
+    if (this.settings.debug) {
+      console.time("add");
+    }
+
     if (typeof element == "object") {
       this.contextMenuElement.appendChild(element);
       this.calculateScales();
@@ -165,11 +218,17 @@ class ContextMenu {
       this.contextMenuElement.innerHTML += element;
       this.calculateScales();
     }
-    //console.timeEnd("add");
+
+    if (this.settings.debug) {
+      console.timeEnd("add");
+    }
   }
 
   setEventListeners() {
-    //console.time("setEventListeners");
+    if (this.settings.debug) {
+      console.time("setEventListeners");
+    }
+
     let self = this;
 
     window.addEventListener("contextmenu", function (event) {
@@ -206,16 +265,9 @@ class ContextMenu {
       }
     });
 
-     this.contextMenuElement.addEventListener('transitionend', function (event) {
-       if (self.expanded) {
-         self.contextMenuElement.classList.remove("context-menu-expanding");
-         self.contextMenuElement.classList.add("context-menu-expanded");
-       } else {
-         self.contextMenuElement.classList.remove("context-menu-collapsing");
-         self.contextMenuElement.classList.add("context-menu-collapsed");
-       }
-     });
-    console.timeEnd("setEventListeners");
+    if (this.settings.debug) {
+      console.timeEnd("setEventListeners");
+    }
   }
 }
 
